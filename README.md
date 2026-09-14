@@ -1,22 +1,23 @@
-# Marieh OS
+Ôªø# Marieh OS
 
 Base inicial do Marieh OS para a franquia Marieh Pilates.
 
 ## Objetivo do MVP
 
 - Google Calendar como base da agenda operacional
-- SincronizaÁ„o com TotalPass e Wellhub
-- Registro de check-in (SeuFisio/TotalPass) para relatÛrios e comiss„o
+- Sincroniza√ß√£o com TotalPass e Wellhub
+- Registro de check-in (SeuFisio/TotalPass) para relat√≥rios e comiss√£o
 - Portal administrativo (Admin + Instrutor)
-- Chatbot interno para operaÁ„o de agenda
-- Lembretes ao aluno com aÁ„o de confirmar/cancelar
+- Chatbot interno para opera√ß√£o de agenda
+- Lembretes ao aluno com a√ß√£o de confirmar/cancelar
 
 ## Estrutura inicial
 
-- `docs/marieh-os-mvp.md`: arquitetura, regras de negÛcio e fluxos
-- `apps/api/`: API inicial com regras centrais de agenda e sincronizaÁ„o
+- `docs/marieh-os-mvp.md`: arquitetura, regras de neg√≥cio e fluxos
+- `apps/api/`: API FastAPI com integra√ß√µes e persist√™ncia em PostgreSQL
+- `apps/web/`: portal de gest√£o web moderno para opera√ß√£o di√°ria
 
-## API local
+## Subir API (backend)
 
 ```bash
 cd apps/api
@@ -24,38 +25,53 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-alembic upgrade head
+alembic -c alembic.ini upgrade head
 uvicorn main:app --reload --port 8080
 ```
 
 Swagger: `http://localhost:8080/docs`
 
-## ConfiguraÁ„o de integraÁıes
+## Subir portal web (frontend)
+
+```bash
+cd apps/web
+npm install
+copy .env.example .env
+npm run dev
+```
+
+Portal: `http://localhost:5173`
+
+## Configura√ß√£o de integra√ß√µes (API)
 
 Preencha `apps/api/.env` baseado em `apps/api/.env.example`:
 
-- `DATABASE_URL`: conex„o PostgreSQL do Marieh OS
-- `GOOGLE_SERVICE_ACCOUNT_FILE`: caminho do JSON da service account com acesso aos calend·rios dos instrutores
+- `DATABASE_URL`: conex√£o PostgreSQL do Marieh OS
+- `GOOGLE_SERVICE_ACCOUNT_FILE`: caminho do JSON da service account com acesso aos calend√°rios dos instrutores
 - `TOTALPASS_*` e `WELLHUB_*`: base URL e token das APIs oficiais
-- `REMINDER_WEBHOOK_URL`: endpoint do serviÁo que envia WhatsApp (24h e 2h)
+- `REMINDER_WEBHOOK_URL`: endpoint do servi√ßo que envia WhatsApp (24h e 2h)
 
-## PersistÍncia e migraÁıes
+## Persist√™ncia e migra√ß√µes
 
 - A API usa PostgreSQL via SQLAlchemy.
-- MigraÁıes s„o gerenciadas por Alembic em `apps/api/alembic`.
-- MigraÁ„o inicial: `apps/api/alembic/versions/0001_initial.py`.
+- Migra√ß√µes s√£o gerenciadas por Alembic em `apps/api/alembic`.
+- Migra√ß√£o inicial: `apps/api/alembic/versions/0001_initial.py`.
 
-Comandos ˙teis:
+Comandos √∫teis:
 
 ```bash
 cd apps/api
-alembic upgrade head
-alembic downgrade -1
+alembic -c alembic.ini upgrade head
+alembic -c alembic.ini downgrade -1
 ```
 
-## PrÛximos passos sugeridos
+## Status da interface web
 
-1. Ajustar payload/rotas finais de disponibilidade TotalPass/Wellhub
-2. Ligar webhook oficial dos parceiros em `POST /webhooks/partners`
-3. Implementar relatÛrios de ocupaÁ„o/comiss„o em SQL
-4. Portal web (Next.js) consumindo esta API
+No `apps/web`, o portal j√° entrega:
+
+- Cadastro de instrutores
+- Cria√ß√£o de slots
+- Cria√ß√£o e atualiza√ß√£o de status de agendamentos
+- Painel de alertas de reconcilia√ß√£o
+- M√©tricas r√°pidas de opera√ß√£o (instrutores, slots, capacidade e agendamentos ativos)
+
