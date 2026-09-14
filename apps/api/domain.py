@@ -2,7 +2,11 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class BaseSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingStatus(str, Enum):
@@ -19,20 +23,20 @@ class BookingSource(str, Enum):
     portal = "portal"
 
 
-class Instructor(BaseModel):
+class Instructor(BaseSchema):
     id: str
     name: str
     max_students_per_slot: int = Field(ge=1, le=20)
     google_calendar_id: str
 
 
-class Student(BaseModel):
+class Student(BaseSchema):
     cpf: str
     full_name: str
     phone: Optional[str] = None
 
 
-class ClassSlot(BaseModel):
+class ClassSlot(BaseSchema):
     id: str
     instructor_id: str
     start_at: datetime
@@ -40,7 +44,7 @@ class ClassSlot(BaseModel):
     capacity: int = Field(ge=1, le=30)
 
 
-class Booking(BaseModel):
+class Booking(BaseSchema):
     id: str
     slot_id: str
     student_cpf: str
@@ -53,7 +57,7 @@ class Booking(BaseModel):
     updated_at: datetime
 
 
-class Alert(BaseModel):
+class Alert(BaseSchema):
     id: str
     booking_id: Optional[str] = None
     kind: str

@@ -33,13 +33,20 @@ Swagger: `http://localhost:8080/docs`
 
 Preencha `apps/api/.env` baseado em `apps/api/.env.example`:
 
+- `DATABASE_URL`: conexão PostgreSQL do Marieh OS
 - `GOOGLE_SERVICE_ACCOUNT_FILE`: caminho do JSON da service account com acesso aos calendários dos instrutores
 - `TOTALPASS_*` e `WELLHUB_*`: base URL e token das APIs oficiais
 - `REMINDER_WEBHOOK_URL`: endpoint do serviço que envia WhatsApp (24h e 2h)
 
+## Persistência
+
+- A API usa PostgreSQL via SQLAlchemy.
+- As tabelas são criadas automaticamente no startup (`Base.metadata.create_all`).
+- Próximo passo recomendado: adicionar migrações com Alembic.
+
 ## Próximos passos sugeridos
 
-1. Conectar endpoint real de disponibilidade de TotalPass/Wellhub (ajustar rota/payload)
-2. Ligar webhook de parceiros em `POST /webhooks/partners`
-3. Persistência real (PostgreSQL)
+1. Ajustar payload/rotas finais de disponibilidade TotalPass/Wellhub
+2. Ligar webhook oficial dos parceiros em `POST /webhooks/partners`
+3. Implementar relatórios de ocupação/comissão em SQL
 4. Portal web (Next.js) consumindo esta API
