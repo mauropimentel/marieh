@@ -48,6 +48,7 @@ class Booking(BaseModel):
     source: BookingSource
     status: BookingStatus = BookingStatus.created
     external_id: Optional[str] = None
+    google_event_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -58,4 +59,3 @@ class Alert(BaseModel):
     kind: str
     message: str
     created_at: datetime
-

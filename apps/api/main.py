@@ -6,13 +6,14 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from domain import Alert, Booking, BookingSource, BookingStatus, ClassSlot, Instructor, Student
-from sync import GoogleCalendarAdapter, NotificationAdapter, PartnerSyncAdapter
+from sync import GoogleCalendarAdapter, IntegrationSettings, NotificationAdapter, PartnerSyncAdapter
 
-app = FastAPI(title="Marieh OS API", version="0.1.0")
+app = FastAPI(title="Marieh OS API", version="0.2.0")
 
-google_calendar = GoogleCalendarAdapter()
-partner_sync = PartnerSyncAdapter()
-notification = NotificationAdapter()
+settings = IntegrationSettings()
+google_calendar = GoogleCalendarAdapter(settings=settings)
+partner_sync = PartnerSyncAdapter(settings=settings)
+notification = NotificationAdapter(settings=settings)
 
 instructors: Dict[str, Instructor] = {}
 students: Dict[str, Student] = {}
@@ -82,6 +83,17 @@ def _ensure_student(cpf: str, full_name: str) -> Student:
     return student
 
 
+def _resolve_slot_and_instructor(slot_id: str) -> tuple[ClassSlot, Instructor]:
+    slot = slots.get(slot_id)
+    if not slot:
+        raise HTTPException(status_code=404, detail="Slot not found")
+
+    instructor = instructors.get(slot.instructor_id)
+    if not instructor:
+        raise HTTPException(status_code=404, detail="Instructor not found")
+    return slot, instructor
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "service": "marieh-os-api"}
@@ -129,11 +141,13 @@ def list_slots() -> List[ClassSlot]:
 
 @app.post("/bookings", response_model=Booking)
 def create_booking(payload: BookingCreate) -> Booking:
-    slot = slots.get(payload.slot_id)
-    if not slot:
-        raise HTTPException(status_code=404, detail="Slot not found")
+    slot, instructor = _resolve_slot_and_instructor(payload.slot_id)
 
-    partner_sync.ensure_booking_horizon(start_at=slot.start_at)
+    try:
+        partner_sync.ensure_booking_horizon(start_at=slot.start_at)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
     _assert_capacity(slot)
     _ensure_student(cpf=payload.cpf, full_name=payload.full_name)
 
@@ -150,10 +164,10 @@ def create_booking(payload: BookingCreate) -> Booking:
         created_at=now,
         updated_at=now,
     )
-    bookings[booking_id] = booking
 
-    google_calendar.upsert_booking_event(booking)
-    notification.schedule_reminders(booking)
+    booking.google_event_id = google_calendar.upsert_booking_event(booking=booking, slot=slot, instructor=instructor)
+    bookings[booking_id] = booking
+    notification.schedule_reminders(booking=booking, slot=slot)
     return booking
 
 
@@ -163,14 +177,20 @@ def update_booking(booking_id: str, payload: BookingUpdate) -> Booking:
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
+    slot, instructor = _resolve_slot_and_instructor(booking.slot_id)
     booking.status = payload.status
     booking.updated_at = datetime.utcnow()
-    bookings[booking_id] = booking
 
     if payload.status == BookingStatus.cancelled:
-        google_calendar.cancel_booking_event(booking)
+        google_calendar.cancel_booking_event(booking=booking, instructor=instructor)
     else:
-        google_calendar.upsert_booking_event(booking)
+        booking.google_event_id = google_calendar.upsert_booking_event(
+            booking=booking,
+            slot=slot,
+            instructor=instructor,
+        )
+
+    bookings[booking_id] = booking
     return booking
 
 
@@ -209,11 +229,12 @@ def partner_webhook(payload: PartnerBookingWebhook) -> dict:
         target = next((item for item in bookings.values() if item.external_id == payload.external_id), None)
         if not target:
             raise HTTPException(status_code=404, detail="Booking not found by external_id")
+        slot, instructor = _resolve_slot_and_instructor(target.slot_id)
         target.status = BookingStatus.cancelled
         target.updated_at = datetime.utcnow()
         bookings[target.id] = target
-        google_calendar.cancel_booking_event(target)
-        return {"ok": True, "booking_id": target.id}
+        google_calendar.cancel_booking_event(target, instructor=instructor)
+        return {"ok": True, "booking_id": target.id, "slot_id": slot.id}
 
     raise HTTPException(status_code=422, detail="Unsupported event_type")
 
@@ -233,4 +254,3 @@ def checkin_webhook(payload: CheckinWebhook) -> dict:
 @app.get("/alerts", response_model=List[Alert])
 def list_alerts() -> List[Alert]:
     return list(alerts.values())
-

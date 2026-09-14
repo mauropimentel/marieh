@@ -5,34 +5,41 @@ Base inicial do Marieh OS para a franquia Marieh Pilates.
 ## Objetivo do MVP
 
 - Google Calendar como base da agenda operacional
-- SincronizaÃ§Ã£o com TotalPass e Wellhub
-- Registro de check-in (SeuFisio/TotalPass) para relatÃ³rios e comissÃ£o
+- Sincronização com TotalPass e Wellhub
+- Registro de check-in (SeuFisio/TotalPass) para relatórios e comissão
 - Portal administrativo (Admin + Instrutor)
-- Chatbot interno para operaÃ§Ã£o de agenda
-- Lembretes ao aluno com aÃ§Ã£o de confirmar/cancelar
+- Chatbot interno para operação de agenda
+- Lembretes ao aluno com ação de confirmar/cancelar
 
 ## Estrutura inicial
 
-- `docs/marieh-os-mvp.md`: arquitetura, regras de negÃ³cio e fluxos
-- `apps/api/`: API inicial com regras centrais de agenda e sincronizaÃ§Ã£o
+- `docs/marieh-os-mvp.md`: arquitetura, regras de negócio e fluxos
+- `apps/api/`: API inicial com regras centrais de agenda e sincronização
 
-## API local (esqueleto)
+## API local
 
 ```bash
 cd apps/api
 python -m venv .venv
 .venv\\Scripts\\activate
 pip install -r requirements.txt
+copy .env.example .env
 uvicorn main:app --reload --port 8080
 ```
 
 Swagger: `http://localhost:8080/docs`
 
-## PrÃ³ximos passos sugeridos
+## Configuração de integrações
 
-1. Conectar Google Calendar (MCP/Google API) no `GoogleCalendarAdapter`
-2. Conectar TotalPass/Wellhub em `PartnerSyncAdapter`
-3. PersistÃªncia real (PostgreSQL)
+Preencha `apps/api/.env` baseado em `apps/api/.env.example`:
+
+- `GOOGLE_SERVICE_ACCOUNT_FILE`: caminho do JSON da service account com acesso aos calendários dos instrutores
+- `TOTALPASS_*` e `WELLHUB_*`: base URL e token das APIs oficiais
+- `REMINDER_WEBHOOK_URL`: endpoint do serviço que envia WhatsApp (24h e 2h)
+
+## Próximos passos sugeridos
+
+1. Conectar endpoint real de disponibilidade de TotalPass/Wellhub (ajustar rota/payload)
+2. Ligar webhook de parceiros em `POST /webhooks/partners`
+3. Persistência real (PostgreSQL)
 4. Portal web (Next.js) consumindo esta API
-5. AutomaÃ§Ã£o de lembretes (WhatsApp)
-
