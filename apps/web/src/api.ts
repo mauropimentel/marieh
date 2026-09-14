@@ -1,6 +1,15 @@
 ﻿import type { Alert, Booking, BookingStatus, ClassSlot, Instructor } from './types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+declare global {
+  interface Window {
+    __MARIEH_CONFIG__?: {
+      API_BASE_URL?: string
+    }
+  }
+}
+
+const runtimeApiBaseUrl = window.__MARIEH_CONFIG__?.API_BASE_URL
+const API_BASE_URL = runtimeApiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -63,4 +72,3 @@ export const api = {
 
   listAlerts: () => request<Alert[]>('/alerts'),
 }
-

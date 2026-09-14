@@ -1,24 +1,38 @@
-from dotenv import load_dotenv
+﻿from dotenv import load_dotenv
 
 load_dotenv()
 
+import os
 from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from db import get_db
-from domain import Alert, Booking, BookingSource, BookingStatus, ClassSlot, Instructor, Student
+from domain import Alert, Booking, BookingSource, BookingStatus, ClassSlot, Instructor
 from models import AlertModel, BookingModel, ClassSlotModel, InstructorModel, StudentModel
 from sync import GoogleCalendarAdapter, IntegrationSettings, NotificationAdapter, PartnerSyncAdapter
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI(title="Marieh OS API", version="0.4.0")
 
-app = FastAPI(title="Marieh OS API", version="0.3.0")
+cors_origins_raw = os.getenv("CORS_ORIGINS", "*")
+if cors_origins_raw.strip() == "*":
+    cors_origins = ["*"]
+else:
+    cors_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 settings = IntegrationSettings()
 google_calendar = GoogleCalendarAdapter(settings=settings)
@@ -308,5 +322,3 @@ def checkin_webhook(payload: CheckinWebhook, db: Session = Depends(get_db)) -> d
 def list_alerts(db: Session = Depends(get_db)) -> List[Alert]:
     rows = db.query(AlertModel).order_by(AlertModel.created_at.desc()).all()
     return [_to_alert(item) for item in rows]
-
-
