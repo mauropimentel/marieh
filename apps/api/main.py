@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from db import Base, engine, get_db
+from db import get_db
 from domain import Alert, Booking, BookingSource, BookingStatus, ClassSlot, Instructor, Student
 from models import AlertModel, BookingModel, ClassSlotModel, InstructorModel, StudentModel
 from sync import GoogleCalendarAdapter, IntegrationSettings, NotificationAdapter, PartnerSyncAdapter
@@ -308,4 +308,5 @@ def checkin_webhook(payload: CheckinWebhook, db: Session = Depends(get_db)) -> d
 def list_alerts(db: Session = Depends(get_db)) -> List[Alert]:
     rows = db.query(AlertModel).order_by(AlertModel.created_at.desc()).all()
     return [_to_alert(item) for item in rows]
+
 

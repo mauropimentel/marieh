@@ -21,9 +21,10 @@ Base inicial do Marieh OS para a franquia Marieh Pilates.
 ```bash
 cd apps/api
 python -m venv .venv
-.venv\\Scripts\\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
+alembic upgrade head
 uvicorn main:app --reload --port 8080
 ```
 
@@ -38,11 +39,19 @@ Preencha `apps/api/.env` baseado em `apps/api/.env.example`:
 - `TOTALPASS_*` e `WELLHUB_*`: base URL e token das APIs oficiais
 - `REMINDER_WEBHOOK_URL`: endpoint do serviço que envia WhatsApp (24h e 2h)
 
-## Persistência
+## Persistência e migrações
 
 - A API usa PostgreSQL via SQLAlchemy.
-- As tabelas são criadas automaticamente no startup (`Base.metadata.create_all`).
-- Próximo passo recomendado: adicionar migrações com Alembic.
+- Migrações são gerenciadas por Alembic em `apps/api/alembic`.
+- Migração inicial: `apps/api/alembic/versions/0001_initial.py`.
+
+Comandos úteis:
+
+```bash
+cd apps/api
+alembic upgrade head
+alembic downgrade -1
+```
 
 ## Próximos passos sugeridos
 
